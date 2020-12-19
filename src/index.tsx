@@ -52,6 +52,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     const path = `/daily/${word}/${format(d, "yyyy/MM/dd")}`
     if (path !== ctx.path) {
         ctx.redirect(path)
+        return
     }
     const target = new URL("https://api.search.nicovideo.jp/api/v2/snapshot/video/contents/search")
     target.searchParams.set("q", "音MAD")
