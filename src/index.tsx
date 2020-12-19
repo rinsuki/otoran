@@ -1,3 +1,4 @@
+process.env.TZ = "Asia/Tokyo"
 import Koa from "koa"
 import Router from "@koa/router"
 import React from "react"
