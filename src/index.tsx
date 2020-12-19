@@ -5,6 +5,7 @@ import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import got from "got"
 import { format } from "date-fns"
+import $ from "transform-ts"
 
 const app = new Koa()
 const router = new Router()
@@ -49,6 +50,41 @@ router.get("/", async ctx => {
     ctx.set("Cache-Control", "s-maxage=600")
 })
 
+function calcMajorTags(tags: string[]) {
+    const tagCount = new Map<string, number>()
+    for (const tag of tags) {
+        if (tagCount.has(tag)) {
+            tagCount.set(tag, tagCount.get(tag)!+1)
+        } else {
+            tagCount.set(tag, 1)
+        }
+    }
+    return Array.from(tagCount.entries()).sort((b, a) => a[1]-b[1])
+}
+
+function normalizedTag(tag: string) {
+    return encodeURIComponent(tag.toLowerCase().normalize("NFKC"))
+}
+
+function majorTagsNormalize(counts: [string, number][]) {
+    const map = new Map<string, [string, number][]>()
+    for (const count of counts) {
+        const normalizedKey = normalizedTag(count[0])
+        map.set(normalizedKey, [...map.get(normalizedKey) ?? [], count])
+    }
+    const arr = [] as [string, number][]
+    for (const [_, entries] of map.entries()) {
+        if (entries.length === 1) {
+            arr.push(entries[0])
+        } else {
+            const entry = entries.sort((b, a) => a[1]-b[1])[0]
+            entry[1] = entries.reduce((prev, now) => prev + now[1], 0)
+            arr.push(entry)
+        }
+    }
+    return arr
+}
+
 router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     const {year, month, day, word} = ctx.params
     if (word !== "otomad") return next()
@@ -67,8 +103,22 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     target.searchParams.set("filters[startTime][lt]", new Date(d.getTime() + oneday).toISOString())
     target.searchParams.set("_limit", "100")
     console.log(target.href)
-    const res = await got(target.href, {responseType: "json"}).then(r => r.body) as any
-    const videos = res.data.sort((b: any, a: any) => a.mylistCounter !== b.mylistCounter ? a.mylistCounter - b.mylistCounter : a.commentCounter !== b.commentCounter ? a.commentCounter - b.commentCounter : a.playCounter - b.playCounter)
+    const res = $.obj({
+        meta: $.obj({
+            totalCount: $.number,
+        }),
+        data: $.array($.obj({
+            contentId: $.string,
+            title: $.string,
+            thumbnailUrl: $.string,
+            tags: $.string,
+            mylistCounter: $.number,
+            commentCounter: $.number,
+            viewCounter: $.number,
+        }))
+    }).transformOrThrow(await got(target.href, {responseType: "json"}).then(r => r.body))
+    const videos = res.data.sort((b, a) => a.mylistCounter !== b.mylistCounter ? a.mylistCounter - b.mylistCounter : a.commentCounter !== b.commentCounter ? a.commentCounter - b.commentCounter : a.viewCounter - b.viewCounter)
+    const majorTags = majorTagsNormalize(calcMajorTags(videos.map(video => video.tags.split(" ")).flat())).filter(([_, cnt]) => cnt > 1)
     ctx.body = renderToStaticMarkup(<html>
         <head>
             <meta charSet="UTF-8" />
@@ -76,7 +126,31 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
             <meta name="twitter:card" content="summary" />
             <meta property="og:title" content={`${format(d, "yyyy年M月d日")}に投稿された音MAD - otoran`} />
             <meta property="og:description" content={`${format(d, "yyyy年M月d日")}に投稿された音MAD (${res.meta.totalCount}件のうち${videos.length}件を表示中) をotoranでチェック！`}/>
-            <style dangerouslySetInnerHTML={{__html: `body{margin:8px}*{word-break:break-all}#app{display:flex;margin:-8px}main{flex:1;margin:0 auto;padding:0 1em;width:calc(100vw - 15em);}.video{display:flex;margin:1em 0}.video-detail{flex:1;margin-left:1em}.prevnext>span{position:sticky;top:calc(50% - 1em)}.prevnext{padding:0 1em;text-align:center;text-decoration:none;}#prev{border-right:1px solid #eee}#next{border-left:1px solid #eee}.tags *{word-break:keep-all}kbd{color:#111;border:1px solid #ddd;border-radius:1px;padding:1px 4px;}.link{text-decoration:underline}`}} />
+            <style dangerouslySetInnerHTML={{__html: `body{margin:8px}*{word-break:break-all}#app{display:flex;margin:-8px}main{flex:1;margin:0 auto;padding:0 1em;width:calc(100vw - 15em);}.video{display:flex;margin:1em 0}.video-detail{flex:1;margin-left:1em}.prevnext>span{position:sticky;top:calc(50% - 1em)}.prevnext{padding:0 1em;text-align:center;text-decoration:none;}#prev{border-right:1px solid #eee}#next{border-left:1px solid #eee}.tags *{word-break:keep-all}kbd{color:#111;border:1px solid #ddd;border-radius:1px;padding:1px 4px;}.link{text-decoration:underline}#tags-filter>*{display:inline-flex;word-break:keep-all;align-items: baseline}.hidden{opacity:0;pointer-events:none;user-select:none}#tags-filter[data-has-filter="yes"]{position:sticky;top:0;background:rgba(255,255,255,0.95)}#tags-filter{margin:0 -1em 1em;padding:0.5em 1em;border-bottom:1px solid #eee}`}} />
+        </head>
+        <body>
+            <div id="app">
+                <a href={`/daily/${word}/${format(d.getTime() - oneday, "yyyy/MM/dd")}`} id="prev" className="prevnext"><span><span className="link">前の日</span><br /><kbd>A</kbd></span></a>
+                <main>
+                    <h1>{format(d, "yyyy年M月d日")}に投稿された音MAD</h1>
+                    <p>全 <strong>{res.meta.totalCount}</strong> 件のうち <strong>{videos.length}</strong> 件を表示しています (マイリスト数順、マイリストが同数の場合は…謎順 (表示はコメント数順))</p>
+                    <div id="tags-filter" className="hidden">
+                        絞り込み: {majorTags.map(([tag, count]) => <label key={tag}><input type="checkbox" value={normalizedTag(tag)}/>{tag}<small>({count})</small></label>)}
+                    </div>
+                    {videos.map(v => <div key={v.contentId} className="video" data-normalized-tags={` ${v.tags.split(" ").map(normalizedTag).join(" ")} `}>
+                        <a className="thumbnail" href={`https://www.nicovideo.jp/watch/${v.contentId}`}><img src={v.thumbnailUrl} loading="lazy" width="130" height="100"/></a>
+                        <div className="video-detail">
+                            <div className="title"><a href={`https://www.nicovideo.jp/watch/${v.contentId}`} className="title">{v.title}</a></div>
+                            <div className="stats"><span className="play-count">再生: <strong>{v.viewCounter}</strong></span> / <span className="comment-count">コメント: <strong>{v.commentCounter}</strong></span> / <span className="mylist-count">マイリスト: <strong>{v.mylistCounter}</strong></span></div>
+                            <div className="tags">{v.tags.split(" ").map((tag: string) => <span key={tag}>🏷<a href={`https://www.nicovideo.jp/tag/${encodeURIComponent(tag)}`}>{tag}</a>{" "}</span>)}</div>
+                        </div>
+                    </div>)}
+                </main>
+                <a href={`/daily/${word}/${format(d.getTime() + oneday, "yyyy/MM/dd")}`} id="next" className="prevnext"><span><span className="link">次の日</span><br /><kbd>D</kbd></span></a>
+            </div>
+            <Footer>
+                <div>ヒント: A/Dキーですばやく前/次の日に移動できます</div>
+            </Footer>
             <script dangerouslySetInnerHTML={{__html: "(" + (() => {
                 addEventListener("keypress", e => {
                     switch (e.key) {
@@ -91,28 +165,29 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
                         break
                     }
                 })
-            }).toString()+")()"}} />
-        </head>
-        <body>
-            <div id="app">
-                <a href={`/daily/${word}/${format(d.getTime() - oneday, "yyyy/MM/dd")}`} id="prev" className="prevnext"><span><span className="link">前の日</span><br /><kbd>A</kbd></span></a>
-                <main>
-                    <h1>{format(d, "yyyy年M月d日")}に投稿された音MAD</h1>
-                    <p>全 <strong>{res.meta.totalCount}</strong> 件のうち <strong>{videos.length}</strong> 件を表示しています (マイリスト数順、マイリストが同数の場合は…謎順 (表示はコメント数順))</p>
-                    {videos.map((v: any) => <div key={v.contentId} className="video">
-                        <a className="thumbnail" href={`https://www.nicovideo.jp/watch/${v.contentId}`}><img src={v.thumbnailUrl} loading="lazy" width="130" height="100"/></a>
-                        <div className="video-detail">
-                            <div className="title"><a href={`https://www.nicovideo.jp/watch/${v.contentId}`} className="title">{v.title}</a></div>
-                            <div className="stats"><span className="play-count">再生: <strong>{v.viewCounter}</strong></span> / <span className="comment-count">コメント: <strong>{v.commentCounter}</strong></span> / <span className="mylist-count">マイリスト: <strong>{v.mylistCounter}</strong></span></div>
-                            <div className="tags">{v.tags.split(" ").map((tag: string) => <span key={tag}>🏷<a href={`https://www.nicovideo.jp/tag/${encodeURIComponent(tag)}`}>{tag}</a>{" "}</span>)}</div>
-                        </div>
-                    </div>)}
-                </main>
-                <a href={`/daily/${word}/${format(d.getTime() + oneday, "yyyy/MM/dd")}`} id="next" className="prevnext"><span><span className="link">次の日</span><br /><kbd>D</kbd></span></a>
-            </div>
-            <Footer>
-                <div>ヒント: A/Dキーですばやく前/次の日に移動できます</div>
-            </Footer>
+                const tagsFilter = document.getElementById("tags-filter")!
+                tagsFilter.classList.remove("hidden")
+                const style = document.createElement("style")
+                document.body.appendChild(style)
+                let first = true
+                function changeFilter() {
+                    const tags = (Array.from(tagsFilter.querySelectorAll("input:checked")) as HTMLInputElement[])
+                    const filter = tags.map(e => `[data-normalized-tags*=" ${e.value} "]`).join(",")
+                    style.innerHTML = filter.length ? `.video:not(${filter}){display:none}` : ""
+                    tagsFilter.dataset.hasFilter = filter.length > 0 ? "yes" : undefined
+                    if (first) {
+                        first = false
+                    } else {
+                        localStorage.setItem("otoran:tags-filter", tags.map(e => e.value).join(" "))
+                    }
+                }
+                const tags = new Set<string>((localStorage.getItem("otoran:tags-filter") ?? "").split(" "))
+                for (const checkbox of tagsFilter.querySelectorAll("input")) {
+                    checkbox.checked = tags.has(checkbox.value)
+                }
+                changeFilter()
+                tagsFilter.addEventListener("change", changeFilter)
+            }).toString()+")()"}}/>
         </body>
     </html>)
     ctx.set("Cache-Control", "s-maxage=600") // 10分くらいCDNキャッシュしとく

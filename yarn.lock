@@ -794,6 +794,7 @@ __metadata:
     koa: ^2.13.0
     react: ^17.0.1
     react-dom: ^17.0.1
+    transform-ts: ^0.3.0
     typescript: ^4.1.3
   languageName: unknown
   linkType: soft
@@ -917,6 +918,13 @@ __metadata:
   version: 1.0.0
   resolution: "toidentifier@npm:1.0.0"
   checksum: 95720e8a0f98f1525f50ccbecbc2a23f0a1b4e448de03819dbbeda03adf0d2010fe64525fbc9d549765242550d341bb891672e4ac0b2cac58613cdd742324255
+  languageName: node
+  linkType: hard
+
+"transform-ts@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "transform-ts@npm:0.3.0"
+  checksum: 497d9fa4cdb82678e51d40b5a2c2784e22bb53d8181c64e337482825caddac3d4931777887644141f717a40970987e8d2a3a63f22b175928184cb7aab8b802a6
   languageName: node
   linkType: hard
 

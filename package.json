@@ -9,7 +9,8 @@
     "got": "^11.8.1",
     "koa": "^2.13.0",
     "react": "^17.0.1",
-    "react-dom": "^17.0.1"
+    "react-dom": "^17.0.1",
+    "transform-ts": "^0.3.0"
   },
   "devDependencies": {
     "@types/koa": "^2.11.6",
