@@ -7,11 +7,11 @@
     { "src": "src/index.tsx", "use": "@vercel/node" }
   ],
   "env": {
-    "YARN_NODE_LINKER": "node_modules"
+    "YARN_NODE_LINKER": "node-modules"
   },
   "build": {
     "env": {
-      "YARN_NODE_LINKER": "node_modules"
+      "YARN_NODE_LINKER": "node-modules"
     }
   }
 }
