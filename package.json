@@ -1,5 +1,8 @@
 {
   "name": "otoran",
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
     "@koa/router": "^10.0.0",
     "date-fns": "^2.16.1",
