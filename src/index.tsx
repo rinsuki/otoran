@@ -10,6 +10,40 @@ const router = new Router()
 
 const oneday = 24 * 60 * 60 * 1000
 
+const Footer: React.FC<{}> = props => {
+    return <>
+        <hr />
+        <footer>
+            <div>Data from: <a href="https://site.nicovideo.jp/search-api-docs/snapshot">ニコニコ動画 『スナップショット検索API v2』</a></div>
+            <div>GitHub: <a href="https://github.com/rinsuki/otoran">https://github.com/rinsuki/otoran</a></div>
+            <div>Author: <a href="https://rinsuki.net">rinsuki</a></div>
+            {props.children}
+            <div><a href="/">トップに行く</a></div>
+        </footer>
+    </>
+}
+
+router.get("/", async ctx => {
+    const currentTimestamp = await got("https://api.search.nicovideo.jp/api/v2/snapshot/version", {responseType: "json"}).then(r => r.body) as any
+    const latestDay = new Date(currentTimestamp.last_modified).getTime() - oneday
+    const latestPath = format(latestDay, "yyyy/MM/dd")
+    ctx.body = renderToStaticMarkup(<html>
+        <head>
+            <meta charSet="UTF-8" />
+        </head>
+        <body>
+            <h1>otoran</h1>
+            <p>ニコニコ動画の<a href="https://site.nicovideo.jp/search-api-docs/snapshot">スナップショット検索API</a>を利用して、特定のタグ<small>(現在は音MADのみ)</small>に投稿された動画一覧を投稿日ごとに分けて見ることができます。</p>
+            <p>スナップショット検索APIの仕様 (毎日日本時間の早朝にスナップショットを取り、その時の状態を検索する) 上、当日の日付での表示内容は不完全にになるほか、各種数値等もその時のものになります。</p>
+            <ul>
+                <li><a href={`/daily/otomad/${latestPath}`}>{format(latestDay, "yyyy年M月d日")} (たぶん昨日) に投稿された音MAD</a></li>
+            </ul>
+            <Footer />
+        </body>
+    </html>)
+    ctx.set("Cache-Control", "s-maxage=600")
+})
+
 router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     const {year, month, day, word} = ctx.params
     if (word !== "otomad") return next()
@@ -31,6 +65,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     const videos = res.data.sort((b: any, a: any) => a.mylistCounter !== b.mylistCounter ? a.mylistCounter - b.mylistCounter : a.commentCounter !== b.commentCounter ? a.commentCounter - b.commentCounter : a.playCounter - b.playCounter)
     ctx.body = renderToStaticMarkup(<html>
         <head>
+            <meta charSet="UTF-8" />
             <title>{format(d, "yyyy年M月d日")}に投稿された音MAD</title>
             <style dangerouslySetInnerHTML={{__html: `*{word-break:break-all}#app{display:flex}main{flex:1}.video{display:flex;margin:1em 0}.video-detail{flex:1;margin-left:1em}`}} />
             <script dangerouslySetInnerHTML={{__html: "(" + (() => {
@@ -66,15 +101,12 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
                 </main>
                 <a href={`/daily/${word}/${format(d.getTime() + oneday, "yyyy/MM/dd")}`} id="next">次の日</a>
             </div>
-            <hr />
-            <footer>
-                <div>Data from: <a href="https://site.nicovideo.jp/search-api-docs/snapshot">ニコニコ動画 『スナップショット検索API v2』</a></div>
-                <div>GitHub: <a href="https://github.com/rinsuki/otoran">https://github.com/rinsuki/otoran</a></div>
-                <div>Author: <a href="https://rinsuki.net">rinsuki</a></div>
+            <Footer>
                 <div>ヒント: A/Dキーですばやく前/次の日に移動できます</div>
-            </footer>
+            </Footer>
         </body>
     </html>)
+    ctx.set("Cache-Control", "s-maxage=600") // 10分くらいCDNキャッシュしとく
 })
 
 app.use(router.routes())
