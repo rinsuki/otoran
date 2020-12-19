@@ -76,7 +76,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
             <meta name="twitter:card" content="summary" />
             <meta property="og:title" content={`${format(d, "yyyy年M月d日")}に投稿された音MAD - otoran`} />
             <meta property="og:description" content={`${format(d, "yyyy年M月d日")}に投稿された音MAD (${res.meta.totalCount}件のうち${videos.length}件を表示中) をotoranでチェック！`}/>
-            <style dangerouslySetInnerHTML={{__html: `body{margin:8px}*{word-break:break-all}#app{display:flex;margin:-8px}main{flex:1;margin:0 auto;padding:1em}.video{display:flex;margin:1em 0}.video-detail{flex:1;margin-left:1em}.prevnext span{position:sticky;top:calc(50% - 0.5em)}.prevnext{padding:0 1em}#prev{border-right:1px solid #eee}#next{border-left:1px solid #eee}.tags *{word-break:keep-all}`}} />
+            <style dangerouslySetInnerHTML={{__html: `body{margin:8px}*{word-break:break-all}#app{display:flex;margin:-8px}main{flex:1;margin:0 auto;padding:1em}.video{display:flex;margin:1em 0}.video-detail{flex:1;margin-left:1em}.prevnext span{position:sticky;top:calc(50% - 1em)}.prevnext{padding:0 1em;text-align:center;text-decoration:none;}#prev{border-right:1px solid #eee}#next{border-left:1px solid #eee}.tags *{word-break:keep-all}kbd{color:#111;border:1px solid #ddd;border-radius:1px;padding:1px 4px;}.link{text-decoration:underline}`}} />
             <script dangerouslySetInnerHTML={{__html: "(" + (() => {
                 addEventListener("keypress", e => {
                     switch (e.key) {
@@ -95,7 +95,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
         </head>
         <body>
             <div id="app">
-                <a href={`/daily/${word}/${format(d.getTime() - oneday, "yyyy/MM/dd")}`} id="prev" className="prevnext"><span>前の日</span></a>
+                <a href={`/daily/${word}/${format(d.getTime() - oneday, "yyyy/MM/dd")}`} id="prev" className="prevnext"><span><span className="link">前の日</span><br /><kbd>A</kbd></span></a>
                 <main>
                     <h1>{format(d, "yyyy年M月d日")}に投稿された音MAD</h1>
                     <p>全 <strong>{res.meta.totalCount}</strong> 件のうち <strong>{videos.length}</strong> 件を表示しています (マイリスト数順、マイリストが同数の場合は…謎順 (表示はコメント数順))</p>
@@ -108,7 +108,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
                         </div>
                     </div>)}
                 </main>
-                <a href={`/daily/${word}/${format(d.getTime() + oneday, "yyyy/MM/dd")}`} id="next" className="prevnext"><span>次の日</span></a>
+                <a href={`/daily/${word}/${format(d.getTime() + oneday, "yyyy/MM/dd")}`} id="next" className="prevnext"><span><span className="link">次の日</span><br /><kbd>D</kbd></span></a>
             </div>
             <Footer>
                 <div>ヒント: A/Dキーですばやく前/次の日に移動できます</div>
