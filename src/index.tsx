@@ -30,7 +30,11 @@ router.get("/", async ctx => {
     const latestPath = format(latestDay, "yyyy/MM/dd")
     ctx.body = renderToStaticMarkup(<html>
         <head>
-            <meta charSet="UTF-8" />
+            <meta charSet="UTF-8"/>
+            <title>otoran</title>
+            <meta name="twitter:card" content="summary" />
+            <meta property="og:title" content="otoran" />
+            <meta property="og:description" content="ニコニコ動画のスナップショット検索APIを利用して、特定のタグ<small>(現在は音MADのみ)</small>に投稿された動画一覧を投稿日ごとに分けて見ることができます。"/>
         </head>
         <body>
             <h1>otoran</h1>
