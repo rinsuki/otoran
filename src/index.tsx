@@ -34,7 +34,7 @@ router.get("/", async ctx => {
             <title>otoran</title>
             <meta name="twitter:card" content="summary" />
             <meta property="og:title" content="otoran" />
-            <meta property="og:description" content="ニコニコ動画のスナップショット検索APIを利用して、特定のタグ<small>(現在は音MADのみ)</small>に投稿された動画一覧を投稿日ごとに分けて見ることができます。"/>
+            <meta property="og:description" content="ニコニコ動画のスナップショット検索APIを利用して、特定のタグ (現在は音MADのみ) に投稿された動画一覧を投稿日ごとに分けて見ることができるサービスです。"/>
         </head>
         <body>
             <h1>otoran</h1>
@@ -72,7 +72,10 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     ctx.body = renderToStaticMarkup(<html>
         <head>
             <meta charSet="UTF-8" />
-            <title>{format(d, "yyyy年M月d日")}に投稿された音MAD</title>
+            <title>{format(d, "yyyy年M月d日")}に投稿された音MAD - otoran</title>
+            <meta name="twitter:card" content="summary" />
+            <meta property="og:title" content={`${format(d, "yyyy年M月d日")}に投稿された音MAD - otoran`} />
+            <meta property="og:description" content={`${format(d, "yyyy年M月d日")}に投稿された音MAD (${res.meta.totalCount}件のうち${videos.length}件を表示中) をotoranでチェック！`}/>
             <style dangerouslySetInnerHTML={{__html: `*{word-break:break-all}#app{display:flex}main{flex:1}.video{display:flex;margin:1em 0}.video-detail{flex:1;margin-left:1em}`}} />
             <script dangerouslySetInnerHTML={{__html: "(" + (() => {
                 addEventListener("keypress", e => {
