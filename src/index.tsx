@@ -76,7 +76,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
             <meta name="twitter:card" content="summary" />
             <meta property="og:title" content={`${format(d, "yyyy年M月d日")}に投稿された音MAD - otoran`} />
             <meta property="og:description" content={`${format(d, "yyyy年M月d日")}に投稿された音MAD (${res.meta.totalCount}件のうち${videos.length}件を表示中) をotoranでチェック！`}/>
-            <style dangerouslySetInnerHTML={{__html: `body{margin:8px}*{word-break:break-all}#app{display:flex;margin:-8px}main{flex:1;margin:0 auto;padding:1em}.video{display:flex;margin:1em 0}.video-detail{flex:1;margin-left:1em}.prevnext span{position:sticky;top:calc(50% - 1em)}.prevnext{padding:0 1em;text-align:center;text-decoration:none;}#prev{border-right:1px solid #eee}#next{border-left:1px solid #eee}.tags *{word-break:keep-all}kbd{color:#111;border:1px solid #ddd;border-radius:1px;padding:1px 4px;}.link{text-decoration:underline}`}} />
+            <style dangerouslySetInnerHTML={{__html: `body{margin:8px}*{word-break:break-all}#app{display:flex;margin:-8px}main{flex:1;margin:0 auto;padding:0 1em;width:calc(100vw - 15em);}.video{display:flex;margin:1em 0}.video-detail{flex:1;margin-left:1em}.prevnext>span{position:sticky;top:calc(50% - 1em)}.prevnext{padding:0 1em;text-align:center;text-decoration:none;}#prev{border-right:1px solid #eee}#next{border-left:1px solid #eee}.tags *{word-break:keep-all}kbd{color:#111;border:1px solid #ddd;border-radius:1px;padding:1px 4px;}.link{text-decoration:underline}`}} />
             <script dangerouslySetInnerHTML={{__html: "(" + (() => {
                 addEventListener("keypress", e => {
                     switch (e.key) {
