@@ -97,8 +97,8 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     const target = new URL("https://api.search.nicovideo.jp/api/v2/snapshot/video/contents/search")
     target.searchParams.set("q", "音MAD")
     target.searchParams.set("targets", "tagsExact")
-    target.searchParams.set("_sort", "-mylistCounter")
-    target.searchParams.set("fields", "contentId,title,description,viewCounter,mylistCounter,lengthSeconds,startTime,lastResBody,commentCounter,categoryTags,tags,genre,thumbnailUrl")
+    target.searchParams.set("_sort", "-likeCounter")
+    target.searchParams.set("fields", "contentId,title,description,viewCounter,mylistCounter,lengthSeconds,startTime,lastResBody,commentCounter,categoryTags,tags,genre,thumbnailUrl,likeCounter")
     target.searchParams.set("filters[startTime][gte]", d.toISOString())
     target.searchParams.set("filters[startTime][lt]", new Date(d.getTime() + oneday).toISOString())
     target.searchParams.set("_limit", "100")
@@ -115,9 +115,16 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
             mylistCounter: $.number,
             commentCounter: $.number,
             viewCounter: $.number,
+            likeCounter: $.number,
         }))
     }).transformOrThrow(await got(target.href, {responseType: "json"}).then(r => r.body))
-    const videos = res.data.sort((b, a) => a.mylistCounter !== b.mylistCounter ? a.mylistCounter - b.mylistCounter : a.commentCounter !== b.commentCounter ? a.commentCounter - b.commentCounter : a.viewCounter - b.viewCounter)
+    const videos = res.data.sort((b, a) => {
+        const mylistAndLike = (a.mylistCounter + a.likeCounter) - (b.mylistCounter + b.likeCounter)
+        if (mylistAndLike !== 0) return mylistAndLike
+        const comment = a.commentCounter - b.commentCounter
+        if (comment !== 0) return comment
+        return a.viewCounter - b.viewCounter
+    })
     const majorTags = majorTagsNormalize(calcMajorTags(videos.map(video => video.tags.split(" ")).flat())).filter(([_, cnt]) => cnt > 1)
     ctx.body = renderToStaticMarkup(<html>
         <head>
@@ -133,7 +140,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
                 <a href={`/daily/${word}/${format(d.getTime() - oneday, "yyyy/MM/dd")}`} id="prev" className="prevnext"><span><span className="link">前の日</span><br /><kbd>A</kbd></span></a>
                 <main>
                     <h1>{format(d, "yyyy年M月d日")}に投稿された音MAD</h1>
-                    <p>全 <strong>{res.meta.totalCount}</strong> 件のうち <strong>{videos.length}</strong> 件を表示しています (マイリスト数順、マイリストが同数の場合は…謎順 (表示はコメント数順))</p>
+                    <p>全 <strong>{res.meta.totalCount}</strong> 件のうち <strong>{videos.length}</strong> 件を表示しています (表示はいいね+マイリス数(同数の場合はコメント数)順、取得はいいね数順)</p>
                     <div id="tags-filter" className="hidden">
                         絞り込み: {majorTags.map(([tag, count]) => <label key={tag}><input type="checkbox" value={normalizedTag(tag)}/>{tag}<small>({count})</small></label>)}
                     </div>
@@ -141,7 +148,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
                         <a className="thumbnail" href={`https://www.nicovideo.jp/watch/${v.contentId}`}><img src={v.thumbnailUrl} loading="lazy" width="130" height="100"/></a>
                         <div className="video-detail">
                             <div className="title"><a href={`https://www.nicovideo.jp/watch/${v.contentId}`} className="title">{v.title}</a></div>
-                            <div className="stats"><span className="play-count">再生: <strong>{v.viewCounter}</strong></span> / <span className="comment-count">コメント: <strong>{v.commentCounter}</strong></span> / <span className="mylist-count">マイリスト: <strong>{v.mylistCounter}</strong></span></div>
+                            <div className="stats"><span className="play-count">再生: <strong>{v.viewCounter}</strong></span> / <span className="comment-count">コメント: <strong>{v.commentCounter}</strong></span> / <span className="mylist-count">マイリスト: <strong>{v.mylistCounter}</strong></span> / <span className="like-count">いいね: <strong>{v.likeCounter}</strong></span></div>
                             <div className="tags">{v.tags.split(" ").map((tag: string) => <span key={tag}>🏷<a href={`https://www.nicovideo.jp/tag/${encodeURIComponent(tag)}`}>{tag}</a>{" "}</span>)}</div>
                         </div>
                     </div>)}
