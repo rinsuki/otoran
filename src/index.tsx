@@ -29,7 +29,7 @@ router.get("/", async ctx => {
     const currentTimestamp = await got("https://api.search.nicovideo.jp/api/v2/snapshot/version", {responseType: "json"}).then(r => r.body) as any
     const latestDay = new Date(currentTimestamp.last_modified).getTime() - oneday
     const latestPath = format(latestDay, "yyyy/MM/dd")
-    ctx.body = renderToStaticMarkup(<html>
+    ctx.body = renderToStaticMarkup(<html lang="ja">
         <head>
             <meta charSet="UTF-8"/>
             <title>otoran</title>
@@ -126,7 +126,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
         return a.viewCounter - b.viewCounter
     })
     const majorTags = majorTagsNormalize(calcMajorTags(videos.map(video => video.tags.split(" ")).flat())).filter(([_, cnt]) => cnt > 1)
-    ctx.body = renderToStaticMarkup(<html>
+    ctx.body = renderToStaticMarkup(<html lang="ja">
         <head>
             <meta charSet="UTF-8" />
             <title>{format(d, "yyyy年M月d日")}に投稿された音MAD - otoran</title>
