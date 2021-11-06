@@ -35,14 +35,15 @@ router.get("/", async ctx => {
             <title>otoran</title>
             <meta name="twitter:card" content="summary" />
             <meta property="og:title" content="otoran" />
-            <meta property="og:description" content="ニコニコ動画のスナップショット検索APIを利用して、特定のタグ (現在は音MADのみ) に投稿された動画一覧を投稿日ごとに分けて見ることができるサービスです。"/>
+            <meta property="og:description" content="ニコニコ動画のスナップショット検索APIを利用して、特定のタグ (現在は音MAD/VOCALOIDのみ) に投稿された動画一覧を投稿日ごとに分けて見ることができるサービスです。"/>
         </head>
         <body>
             <h1>otoran</h1>
-            <p>ニコニコ動画の<a href="https://site.nicovideo.jp/search-api-docs/snapshot">スナップショット検索API</a>を利用して、特定のタグ<small>(現在は音MADのみ)</small>に投稿された動画一覧を投稿日ごとに分けて見ることができます。</p>
+            <p>ニコニコ動画の<a href="https://site.nicovideo.jp/search-api-docs/snapshot">スナップショット検索API</a>を利用して、特定のタグ<small>(現在は音MAD/VOCALOIDのみ)</small>に投稿された動画一覧を投稿日ごとに分けて見ることができます。</p>
             <p>スナップショット検索APIの仕様 (毎日日本時間の早朝にスナップショットを取り、その時の状態を検索する) 上、当日の日付での表示内容は不完全になるほか、各種数値等もその時のものになります。</p>
             <ul>
                 <li><a href={`/daily/otomad/${latestPath}`}>{format(latestDay, "yyyy年M月d日")} (たぶん昨日) に投稿された音MAD</a></li>
+                <li><a href={`/daily/vocaloid/${latestPath}`}>{format(latestDay, "yyyy年M月d日")} (たぶん昨日) に投稿されたVOCALOID</a></li>
             </ul>
             <Footer />
         </body>
@@ -85,9 +86,15 @@ function majorTagsNormalize(counts: [string, number][]) {
     return arr
 }
 
+const words = new Map([
+    ["otomad", "音MAD"],
+    ["vocaloid", "VOCALOID"]
+])
+
 router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     const {year, month, day, word} = ctx.params
-    if (word !== "otomad") return next()
+    const tag = words.get(word)
+    if (tag == null) return next()
     const d = new Date(year, month-1, day)
     const path = `/daily/${word}/${format(d, "yyyy/MM/dd")}`
     if (path !== ctx.path) {
@@ -95,7 +102,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
         return
     }
     const target = new URL("https://api.search.nicovideo.jp/api/v2/snapshot/video/contents/search")
-    target.searchParams.set("q", "音MAD")
+    target.searchParams.set("q", tag)
     target.searchParams.set("targets", "tagsExact")
     target.searchParams.set("_sort", "-likeCounter")
     target.searchParams.set("fields", "contentId,title,description,viewCounter,mylistCounter,lengthSeconds,startTime,lastResBody,commentCounter,categoryTags,tags,genre,thumbnailUrl,likeCounter")
@@ -129,17 +136,17 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     ctx.body = renderToStaticMarkup(<html lang="ja">
         <head>
             <meta charSet="UTF-8" />
-            <title>{format(d, "yyyy年M月d日")}に投稿された音MAD - otoran</title>
+            <title>{format(d, "yyyy年M月d日")}に投稿された{tag} - otoran</title>
             <meta name="twitter:card" content="summary" />
-            <meta property="og:title" content={`${format(d, "yyyy年M月d日")}に投稿された音MAD - otoran`} />
-            <meta property="og:description" content={`${format(d, "yyyy年M月d日")}に投稿された音MAD (${res.meta.totalCount}件のうち${videos.length}件を表示中) をotoranでチェック！`}/>
+            <meta property="og:title" content={`${format(d, "yyyy年M月d日")}に投稿された${tag} - otoran`} />
+            <meta property="og:description" content={`${format(d, "yyyy年M月d日")}に投稿された${tag} (${res.meta.totalCount}件のうち${videos.length}件を表示中) をotoranでチェック！`}/>
             <style dangerouslySetInnerHTML={{__html: `body{margin:8px}*{word-break:break-all}#app{display:flex;margin:-8px}main{flex:1;margin:0 auto;padding:0 1em;width:calc(100vw - 15em);}.video{display:flex;margin:1em 0}.video-detail{flex:1;margin-left:1em}.prevnext>span{position:sticky;top:calc(50% - 1em)}.prevnext{padding:0 1em;text-align:center;text-decoration:none;}#prev{border-right:1px solid #eee}#next{border-left:1px solid #eee}.tags *{word-break:keep-all}kbd{color:#111;border:1px solid #ddd;border-radius:1px;padding:1px 4px;}.link{text-decoration:underline}#tags-filter>*{display:inline-flex;word-break:keep-all;align-items: baseline}.hidden{opacity:0;pointer-events:none;user-select:none}#tags-filter[data-has-filter="yes"]{position:sticky;top:0;background:rgba(255,255,255,0.95)}#tags-filter{margin:0 -1em 1em;padding:0.5em 1em;border-bottom:1px solid #eee}`}} />
         </head>
         <body>
             <div id="app">
                 <a href={`/daily/${word}/${format(d.getTime() - oneday, "yyyy/MM/dd")}`} id="prev" className="prevnext"><span><span className="link">前の日</span><br /><kbd>A</kbd></span></a>
                 <main>
-                    <h1>{format(d, "yyyy年M月d日")}に投稿された音MAD</h1>
+                    <h1>{format(d, "yyyy年M月d日")}に投稿された{tag}</h1>
                     <p>全 <strong>{res.meta.totalCount}</strong> 件のうち <strong>{videos.length}</strong> 件を表示しています (表示はいいね+マイリス数(同数の場合はコメント数)順、取得はいいね数順)</p>
                     <div id="tags-filter" className="hidden">
                         絞り込み: {majorTags.map(([tag, count]) => <label key={tag}><input type="checkbox" value={normalizedTag(tag)}/>{tag}<small>({count})</small></label>)}
