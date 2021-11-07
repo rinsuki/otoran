@@ -20,6 +20,7 @@ const Footer: React.FC<{}> = props => {
             <div>GitHub: <a href="https://github.com/rinsuki/otoran">https://github.com/rinsuki/otoran</a></div>
             <div>Author: <a href="https://rinsuki.net">rinsuki</a></div>
             {props.children}
+            <div>NEW! otoran 内で動画視聴/いいねができる <a href="https://addons.mozilla.org/ja/firefox/addon/otoran-inline-player/">Firefoxアドオン</a>を公開しました (2021/11/07)</div>
             <div><a href="/">トップに行く</a></div>
         </footer>
     </>
