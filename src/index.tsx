@@ -44,7 +44,8 @@ router.get("/", async ctx => {
             <p>スナップショット検索APIの仕様 (毎日日本時間の早朝にスナップショットを取り、その時の状態を検索する) 上、当日の日付での表示内容は不完全になるほか、各種数値等もその時のものになります。</p>
             <ul>
                 <li><a href={`/daily/otomad/${latestPath}`}>{format(latestDay, "yyyy年M月d日")} (たぶん昨日) に投稿された音MAD</a></li>
-                <li><a href={`/daily/vocaloid/${latestPath}`}>{format(latestDay, "yyyy年M月d日")} (たぶん昨日) に投稿されたVOCALOID</a></li>
+                <li><a href={`/daily/vocaloid/${latestPath}`}>{format(latestDay, "yyyy年M月d日")} (たぶん昨日) に投稿されたVOCALOID・派生(〜ってみた動画など)含む動画</a></li>
+                <li><a href={`/daily/vocaloid_only/${latestPath}`}>{format(latestDay, "yyyy年M月d日")} (たぶん昨日) に投稿されたVOCALOID動画</a></li>
             </ul>
             <Footer />
         </body>
@@ -88,8 +89,30 @@ function majorTagsNormalize(counts: [string, number][]) {
 }
 
 const words = new Map([
-    ["otomad", "音MAD"],
-    ["vocaloid", "VOCALOID"]
+    ["otomad", {
+        query: {
+            q: "音MAD",
+        },
+        displayName: "音MAD",
+    }],
+    ["vocaloid", {
+        query: {
+            q: "VOCALOID",
+        },
+        displayName: "VOCALOID"
+    }],
+    ["vocaloid_only", {
+        query: {
+            q: "VOCALOID -歌ってみた -踊ってみた -MMD",
+        },
+        displayName: "VOCALOID(のみ)"
+    }],
+    ["all", {
+        query: {
+            q: "",
+        },
+        displayName: "全て",
+    }]
 ])
 
 router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
@@ -103,8 +126,10 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
         return
     }
     const target = new URL("https://api.search.nicovideo.jp/api/v2/snapshot/video/contents/search")
-    target.searchParams.set("q", tag)
     target.searchParams.set("targets", "tagsExact")
+    for (const [key, value] of Object.entries(tag.query)) {
+        target.searchParams.set(key, value)
+    }
     target.searchParams.set("_sort", "-likeCounter")
     target.searchParams.set("fields", "contentId,title,viewCounter,mylistCounter,commentCounter,tags,genre,thumbnailUrl,likeCounter")
     target.searchParams.set("filters[startTime][gte]", d.toISOString())
@@ -124,7 +149,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
             commentCounter: $.number,
             viewCounter: $.number,
             likeCounter: $.number,
-            genre: $.optional($.string),
+            genre: $.nullable($.string),
         }))
     }).transformOrThrow(await got(target.href, {responseType: "json"}).then(r => r.body))
     const videos = res.data.sort((b, a) => {
@@ -148,7 +173,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
             <div id="app">
                 <a href={`/daily/${word}/${format(d.getTime() - oneday, "yyyy/MM/dd")}`} id="prev" className="prevnext"><span><span className="link">前の日</span><br /><kbd>A</kbd></span></a>
                 <main>
-                    <h1>{format(d, "yyyy年M月d日")}に投稿された{tag}</h1>
+                    <h1>{format(d, "yyyy年M月d日")}に投稿された{tag.displayName}</h1>
                     <p>全 <strong>{res.meta.totalCount}</strong> 件のうち <strong>{videos.length}</strong> 件を表示しています (表示はいいね+マイリス数(同数の場合はコメント数)順、取得はいいね数順)</p>
                     <div id="tags-filter" className="hidden">
                         絞り込み: {majorTags.map(([tag, count]) => <label key={tag}><input type="checkbox" value={normalizedTag(tag)}/>{tag}<small>({count})</small></label>)}
