@@ -131,7 +131,8 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     for (const [key, value] of Object.entries(tag.query)) {
         target.searchParams.set(key, value)
     }
-    target.searchParams.set("_sort", "-likeCounter")
+    const useLikeAsAPISort = (new Date(2020, 7-1, 27)).getTime() <= d.getTime()
+    target.searchParams.set("_sort", useLikeAsAPISort ? "-likeCounter" : "-mylistCounter")
     target.searchParams.set("fields", "contentId,title,viewCounter,mylistCounter,commentCounter,tags,genre,thumbnailUrl,likeCounter")
     target.searchParams.set("filters[startTime][gte]", d.toISOString())
     target.searchParams.set("filters[startTime][lt]", new Date(d.getTime() + oneday).toISOString())
@@ -175,7 +176,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
                 <a href={`/daily/${word}/${format(d.getTime() - oneday, "yyyy/MM/dd")}`} id="prev" className="prevnext"><span><span className="link">前の日</span><br /><kbd>A</kbd></span></a>
                 <main>
                     <h1>{format(d, "yyyy年M月d日")}に投稿された{tag.displayName}</h1>
-                    <p>全 <strong>{res.meta.totalCount}</strong> 件のうち <strong>{videos.length}</strong> 件を表示しています (表示はいいね+マイリス数(同数の場合はコメント数)順、取得はいいね数順)</p>
+                    <p>全 <strong>{res.meta.totalCount}</strong> 件のうち <strong>{videos.length}</strong> 件を表示しています (表示はいいね+マイリス数(同数の場合はコメント数)順、取得は{useLikeAsAPISort ? "いいね" : "マイリスト"}数順)</p>
                     <div id="tags-filter" className="hidden">
                         絞り込み: {majorTags.map(([tag, count]) => <label key={tag}><input type="checkbox" value={normalizedTag(tag)}/>{tag}<small>({count})</small></label>)}
                     </div>
