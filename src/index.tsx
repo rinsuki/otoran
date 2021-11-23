@@ -45,7 +45,8 @@ router.get("/", async ctx => {
             <ul>
                 <li><a href={`/daily/otomad/${latestPath}`}>{format(latestDay, "yyyy年M月d日")} (たぶん昨日) に投稿された音MAD</a></li>
                 <li><a href={`/daily/vocaloid/${latestPath}`}>{format(latestDay, "yyyy年M月d日")} (たぶん昨日) に投稿されたVOCALOID・派生(〜ってみた動画など)含む動画</a></li>
-                <li><a href={`/daily/vocaloid_only/${latestPath}`}>{format(latestDay, "yyyy年M月d日")} (たぶん昨日) に投稿されたVOCALOID動画</a></li>
+                <li><a href={`/daily/vocaloid_only/${latestPath}`}>{format(latestDay, "yyyy年M月d日")} (たぶん昨日) に投稿されたVOCALOID動画</a> (頑張ってフィルタしていますがすりぬけることもあります)</li>
+                <li><a href={`/daily/all/${latestPath}`}>{format(latestDay, "yyyy年M月d日")} (たぶん昨日) に投稿された全ての動画</a></li>
             </ul>
             <Footer />
         </body>
@@ -99,19 +100,19 @@ const words = new Map([
         query: {
             q: "VOCALOID",
         },
-        displayName: "VOCALOID"
+        displayName: "VOCALOID＆派生(MMD・〜ってみた等)"
     }],
     ["vocaloid_only", {
         query: {
-            q: "VOCALOID -歌ってみた -踊ってみた -MMD",
+            q: "VOCALOID -歌ってみた -踊ってみた -MMD -ニコカラ",
         },
-        displayName: "VOCALOID(のみ)"
+        displayName: "VOCALOID"
     }],
     ["all", {
         query: {
             q: "",
         },
-        displayName: "全て",
+        displayName: "全ての動画",
     }]
 ])
 
@@ -163,10 +164,10 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     ctx.body = renderToStaticMarkup(<html lang="ja">
         <head>
             <meta charSet="UTF-8" />
-            <title>{format(d, "yyyy年M月d日")}に投稿された{tag} - otoran</title>
+            <title>{format(d, "yyyy年M月d日")}に投稿された{tag.displayName} - otoran</title>
             <meta name="twitter:card" content="summary" />
-            <meta property="og:title" content={`${format(d, "yyyy年M月d日")}に投稿された${tag} - otoran`} />
-            <meta property="og:description" content={`${format(d, "yyyy年M月d日")}に投稿された${tag} (${res.meta.totalCount}件のうち${videos.length}件を表示中) をotoranでチェック！`}/>
+            <meta property="og:title" content={`${format(d, "yyyy年M月d日")}に投稿された${tag.displayName} - otoran`} />
+            <meta property="og:description" content={`${format(d, "yyyy年M月d日")}に投稿された${tag.displayName} (${res.meta.totalCount}件のうち${videos.length}件を表示中) をotoranでチェック！`}/>
             <style dangerouslySetInnerHTML={{__html: `body{margin:8px}*{word-break:break-all}#app{display:flex;margin:-8px}main{flex:1;margin:0 auto;padding:0 1em;width:calc(100vw - 15em);}.video{display:flex;margin:1em 0}.video-detail{flex:1;margin-left:1em}.prevnext>span{position:sticky;top:calc(50% - 1em)}.prevnext{padding:0 1em;text-align:center;text-decoration:none;}#prev{border-right:1px solid #eee}#next{border-left:1px solid #eee}.tags *{word-break:keep-all}kbd{color:#111;border:1px solid #ddd;border-radius:1px;padding:1px 4px;}.link{text-decoration:underline}#tags-filter>*{display:inline-flex;word-break:keep-all;align-items: baseline}.hidden{opacity:0;pointer-events:none;user-select:none}#tags-filter[data-has-filter="yes"]{position:sticky;top:0;background:rgba(255,255,255,0.95)}#tags-filter{margin:0 -1em 1em;padding:0.5em 1em;border-bottom:1px solid #eee}`}} />
         </head>
         <body>
@@ -184,7 +185,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
                             <div className="title"><a href={`https://www.nicovideo.jp/watch/${v.contentId}`} className="title">{v.title}</a></div>
                             <div className="stats"><span className="play-count">再生: <strong>{v.viewCounter}</strong></span> / <span className="comment-count">コメント: <strong>{v.commentCounter}</strong></span> / <span className="mylist-count">マイリスト: <strong>{v.mylistCounter}</strong></span> / <span className="like-count">いいね: <strong>{v.likeCounter}</strong></span></div>
                             <div className="tags">
-                                {v.genre && <span class="tag-genre">ジャンル: {v.genre}{" "}</span>}
+                                {v.genre && <span className="tag-genre">ジャンル: {v.genre}{" "}</span>}
                                 {v.tags.split(" ").map((tag: string) => <span key={tag}>🏷<a href={`https://www.nicovideo.jp/tag/${encodeURIComponent(tag)}`}>{tag}</a>{" "}</span>)}
                             </div>
                         </div>
