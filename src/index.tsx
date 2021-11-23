@@ -106,7 +106,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     target.searchParams.set("q", tag)
     target.searchParams.set("targets", "tagsExact")
     target.searchParams.set("_sort", "-likeCounter")
-    target.searchParams.set("fields", "contentId,title,description,viewCounter,mylistCounter,lengthSeconds,startTime,lastResBody,commentCounter,categoryTags,tags,genre,thumbnailUrl,likeCounter")
+    target.searchParams.set("fields", "contentId,title,viewCounter,mylistCounter,commentCounter,tags,genre,thumbnailUrl,likeCounter")
     target.searchParams.set("filters[startTime][gte]", d.toISOString())
     target.searchParams.set("filters[startTime][lt]", new Date(d.getTime() + oneday).toISOString())
     target.searchParams.set("_limit", "100")
@@ -124,6 +124,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
             commentCounter: $.number,
             viewCounter: $.number,
             likeCounter: $.number,
+            genre: $.optional($.string),
         }))
     }).transformOrThrow(await got(target.href, {responseType: "json"}).then(r => r.body))
     const videos = res.data.sort((b, a) => {
@@ -157,7 +158,10 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
                         <div className="video-detail">
                             <div className="title"><a href={`https://www.nicovideo.jp/watch/${v.contentId}`} className="title">{v.title}</a></div>
                             <div className="stats"><span className="play-count">再生: <strong>{v.viewCounter}</strong></span> / <span className="comment-count">コメント: <strong>{v.commentCounter}</strong></span> / <span className="mylist-count">マイリスト: <strong>{v.mylistCounter}</strong></span> / <span className="like-count">いいね: <strong>{v.likeCounter}</strong></span></div>
-                            <div className="tags">{v.tags.split(" ").map((tag: string) => <span key={tag}>🏷<a href={`https://www.nicovideo.jp/tag/${encodeURIComponent(tag)}`}>{tag}</a>{" "}</span>)}</div>
+                            <div className="tags">
+                                {v.genre && <span class="tag-genre">ジャンル: {v.genre}{" "}</span>}
+                                {v.tags.split(" ").map((tag: string) => <span key={tag}>🏷<a href={`https://www.nicovideo.jp/tag/${encodeURIComponent(tag)}`}>{tag}</a>{" "}</span>)}
+                            </div>
                         </div>
                     </div>)}
                 </main>
