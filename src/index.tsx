@@ -161,7 +161,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
         if (comment !== 0) return comment
         return a.viewCounter - b.viewCounter
     })
-    const majorTags = majorTagsNormalize(calcMajorTags(videos.map(video => video.tags.split(" ")).flat())).filter(([_, cnt]) => cnt > 1)
+    const majorTags = majorTagsNormalize(calcMajorTags(videos.map(video => video.tags.split(" ").filter(tag => tag.length)).flat())).filter(([_, cnt]) => cnt > 1)
     ctx.body = renderToStaticMarkup(<html lang="ja">
         <head>
             <meta charSet="UTF-8" />
@@ -187,7 +187,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
                             <div className="stats"><span className="play-count">再生: <strong>{v.viewCounter}</strong></span> / <span className="comment-count">コメント: <strong>{v.commentCounter}</strong></span> / <span className="mylist-count">マイリスト: <strong>{v.mylistCounter}</strong></span> / <span className="like-count">いいね: <strong>{v.likeCounter}</strong></span></div>
                             <div className="tags">
                                 {v.genre && <span className="tag-genre">ジャンル: {v.genre}{" "}</span>}
-                                {v.tags.split(" ").map((tag: string) => <span key={tag}>🏷<a href={`https://www.nicovideo.jp/tag/${encodeURIComponent(tag)}`}>{tag}</a>{" "}</span>)}
+                                {v.tags.split(" ").filter(t => t.length).map((tag: string) => <span key={tag}>🏷<a href={`https://www.nicovideo.jp/tag/${encodeURIComponent(tag)}`}>{tag}</a>{" "}</span>)}
                             </div>
                         </div>
                     </div>)}
