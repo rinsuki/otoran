@@ -153,7 +153,12 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
             likeCounter: $.number,
             genre: $.nullable($.string),
         }))
-    }).transformOrThrow(await got(target.href, {responseType: "json"}).then(r => r.body))
+    }).transformOrThrow(await got(target.href, {
+        responseType: "json",
+        headers: {
+            "User-Agent": "otoran/1.0.0 (+https://github.com/rinsuki/otoran)",
+        }
+    }).then(r => r.body))
     const videos = res.data.sort((b, a) => {
         const mylistAndLike = (a.mylistCounter + a.likeCounter) - (b.mylistCounter + b.likeCounter)
         if (mylistAndLike !== 0) return mylistAndLike
