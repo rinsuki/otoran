@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 import got from "got"
 import { format } from "date-fns"
 import $ from "transform-ts"
+import fs from "fs"
 
 const app = new Koa()
 const router = new Router()
@@ -116,6 +117,25 @@ const words = new Map([
     }]
 ])
 
+
+try {
+    // vercelの場合ここはvercelにやってもらう
+    const STATIC_DIR = __dirname+"/../static"
+    const allowedFiles = fs.readdirSync(STATIC_DIR)
+
+    if (allowedFiles.length) router.get("/static/:filename", async (ctx, next) => {
+        const filename = $.string.transformOrThrow(ctx.params.filename)
+        if (!allowedFiles.includes(filename)) return next()
+        const ext = filename.split(".")
+        ctx.type = ({
+            "js": "application/javascript",
+            "css": "text/css",
+        } as {[key: string]: string})[ext.slice(-1)[0]] ?? "application/octet-stream"
+        ctx.body = fs.createReadStream(STATIC_DIR + "/" + filename)
+    })
+} catch(e) {
+}
+
 router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     const {year, month, day, word} = ctx.params
     const tag = words.get(word)
@@ -184,11 +204,12 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     ctx.body = renderToStaticMarkup(<html lang="ja">
         <head>
             <meta charSet="UTF-8" />
+            <link rel="stylesheet" href="/static/style.css" />
+            <script src="/static/tagfilter.js" defer/>
             <title>{format(d, "yyyy年M月d日")}に投稿された{tag.displayName} - otoran</title>
             <meta name="twitter:card" content="summary" />
             <meta property="og:title" content={`${format(d, "yyyy年M月d日")}に投稿された${tag.displayName} - otoran`} />
             <meta property="og:description" content={`${format(d, "yyyy年M月d日")}に投稿された${tag.displayName} (${res.meta.totalCount}件のうち${videos.length}件を表示中) をotoranでチェック！`}/>
-            <style dangerouslySetInnerHTML={{__html: `body{margin:8px}*{word-break:break-all}#app{display:flex;margin:-8px}main{flex:1;margin:0 auto;padding:0 1em;width:calc(100vw - 15em);}.video{display:flex;margin:1em 0}.video-detail{flex:1;margin-left:1em}.prevnext>span{position:sticky;top:calc(50% - 1em)}.prevnext{padding:0 1em;text-align:center;text-decoration:none;}#prev{border-right:1px solid #eee}#next{border-left:1px solid #eee}.tags *{word-break:keep-all}kbd{color:#111;border:1px solid #ddd;border-radius:1px;padding:1px 4px;}.link{text-decoration:underline}#tags-filter>*{display:inline-flex;word-break:keep-all;align-items: baseline}.hidden{opacity:0;pointer-events:none;user-select:none}#tags-filter[data-has-filter="yes"]{position:sticky;top:0;background:rgba(255,255,255,0.95)}#tags-filter{margin:0 -1em 1em;padding:0.5em 1em;border-bottom:1px solid #eee}`}} />
         </head>
         <body>
             <div id="app">
@@ -216,43 +237,6 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
             <Footer>
                 <div>ヒント: A/Dキーですばやく前/次の日に移動できます</div>
             </Footer>
-            <script dangerouslySetInnerHTML={{__html: "(" + (() => {
-                addEventListener("keypress", e => {
-                    switch (e.key) {
-                    case "a":
-                        document.getElementById("prev")?.click()
-                        break
-                    case "d":
-                        document.getElementById("next")?.click()
-                        break
-                    default:
-                        console.log(e.key)
-                        break
-                    }
-                })
-                const tagsFilter = document.getElementById("tags-filter")!
-                tagsFilter.classList.remove("hidden")
-                const style = document.createElement("style")
-                document.body.appendChild(style)
-                let first = true
-                function changeFilter() {
-                    const tags = (Array.from(tagsFilter.querySelectorAll("input:checked")) as HTMLInputElement[])
-                    const filter = tags.map(e => `[data-normalized-tags*=" ${e.value} "]`).join(",")
-                    style.innerHTML = filter.length ? `.video:not(${filter}){display:none}` : ""
-                    tagsFilter.dataset.hasFilter = filter.length > 0 ? "yes" : undefined
-                    if (first) {
-                        first = false
-                    } else {
-                        localStorage.setItem("otoran:tags-filter", tags.map(e => e.value).join(" "))
-                    }
-                }
-                const tags = new Set<string>((localStorage.getItem("otoran:tags-filter") ?? "").split(" "))
-                for (const checkbox of tagsFilter.querySelectorAll("input")) {
-                    checkbox.checked = tags.has(checkbox.value)
-                }
-                changeFilter()
-                tagsFilter.addEventListener("change", changeFilter)
-            }).toString()+")()"}}/>
         </body>
     </html>)
     ctx.set("Cache-Control", "s-maxage=600") // 10分くらいCDNキャッシュしとく
