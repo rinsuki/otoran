@@ -133,7 +133,19 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
     }
     const useLikeAsAPISort = (new Date(2020, 7-1, 27)).getTime() <= d.getTime()
     target.searchParams.set("_sort", useLikeAsAPISort ? "-likeCounter" : "-mylistCounter")
-    target.searchParams.set("fields", "contentId,title,viewCounter,mylistCounter,commentCounter,tags,genre,thumbnailUrl,likeCounter")
+    target.searchParams.set("fields", [
+        "contentId",
+        "title",
+        "viewCounter",
+        "mylistCounter",
+        "commentCounter",
+        "tags",
+        "genre",
+        "thumbnailUrl",
+        "likeCounter",
+        "userId",
+        "channelId",
+    ].join(","))
     target.searchParams.set("filters[startTime][gte]", d.toISOString())
     target.searchParams.set("filters[startTime][lt]", new Date(d.getTime() + oneday).toISOString())
     target.searchParams.set("_limit", "100")
@@ -152,6 +164,8 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
             viewCounter: $.number,
             likeCounter: $.number,
             genre: $.nullable($.string),
+            userId: $.nullable($.number),
+            channelId: $.nullable($.number),
         }))
     }).transformOrThrow(await got(target.href, {
         responseType: "json",
@@ -185,7 +199,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
                     <div id="tags-filter" className="hidden">
                         絞り込み: {majorTags.map(([tag, count]) => <label key={tag}><input type="checkbox" value={normalizedTag(tag)}/>{tag}<small>({count})</small></label>)}
                     </div>
-                    {videos.map(v => <div key={v.contentId} className="video" data-normalized-tags={` ${v.tags.split(" ").map(normalizedTag).join(" ")} `}>
+                    {videos.map(v => <div key={v.contentId} className="video" data-normalized-tags={` ${v.tags.split(" ").map(normalizedTag).join(" ")} `} data-user-id={v.userId} data-channel-id={v.channelId}>
                         <a className="thumbnail" href={`https://www.nicovideo.jp/watch/${v.contentId}`}><img src={v.thumbnailUrl} loading="lazy" width="130" height="100"/></a>
                         <div className="video-detail">
                             <div className="title"><a href={`https://www.nicovideo.jp/watch/${v.contentId}`} className="title">{v.title}</a></div>
