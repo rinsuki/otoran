@@ -109,12 +109,19 @@ const words = new Map([
         },
         displayName: "VOCALOID"
     }],
+    ["sound", {
+        query: {
+            q: "音楽・サウンド",
+            targets: "genre",
+        },
+        displayName: "音楽・サウンドジャンル",
+    }]
     ["all", {
         query: {
             q: "",
         },
         displayName: "全ての動画",
-    }]
+    }],
 ])
 
 
