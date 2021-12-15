@@ -115,7 +115,7 @@ const words = new Map([
             targets: "genre",
         },
         displayName: "音楽・サウンドジャンル",
-    }]
+    }],
     ["all", {
         query: {
             q: "",
