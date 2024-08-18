@@ -28,7 +28,7 @@ const Footer: React.FC<{}> = props => {
 }
 
 router.get("/", async ctx => {
-    const currentTimestamp = await got("https://api.search.nicovideo.jp/api/v2/snapshot/version", {responseType: "json"}).then(r => r.body) as any
+    const currentTimestamp = await got("https://snapshot.search.nicovideo.jp/api/v2/snapshot/version", {responseType: "json"}).then(r => r.body) as any
     const latestDay = new Date(currentTimestamp.last_modified).getTime() - oneday
     const latestPath = format(latestDay, "yyyy/MM/dd")
     ctx.body = renderToStaticMarkup(<html lang="ja">
@@ -153,7 +153,7 @@ router.get("/daily/:word/:year/:month/:day", async (ctx, next) => {
         ctx.redirect(path)
         return
     }
-    const target = new URL("https://api.search.nicovideo.jp/api/v2/snapshot/video/contents/search")
+    const target = new URL("https://snapshot.search.nicovideo.jp/api/v2/snapshot/video/contents/search")
     target.searchParams.set("targets", "tagsExact")
     for (const [key, value] of Object.entries(tag.query)) {
         target.searchParams.set(key, value)
